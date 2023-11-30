@@ -84,8 +84,7 @@ const Model = ({ imageDetails }: ModelProps) => {
                 </motion.span>
                 <motion.span className="last" variants={lastName}>
                   <motion.span variants={letter}>C</motion.span>
-                  <motion.span variants={letter}>H</motion.span>
-                  <motion.span variants={letter}>I</motion.span>
+                  <motion.span variants={letter}>O</motion.span>
                 </motion.span>
               </motion.div>
             </div>
