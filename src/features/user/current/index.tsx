@@ -15,7 +15,7 @@ function MainCurrent() {
   return (
     <div className="my-8 max-w-3xl mx-auto px-4 ">
       {sectionsLoading && <Loading size="medium" type="full" />}
-      {error && (
+      {!!error && (
         <div className="p-4 mb-4 text-red-700 bg-red-100 rounded-lg">
           Error loading sections: {(error as any)?.message || 'Unknown error. Check console and Firebase Rules.'}
         </div>
