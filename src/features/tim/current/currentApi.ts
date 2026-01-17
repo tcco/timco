@@ -13,11 +13,19 @@ import {
 import { db } from '@/services/firebase';
 
 export async function getSections() {
-  const querySnapshot = await getDocs(collection(db, 'current_sections'));
-  return querySnapshot.docs.map((doc) => ({
-    id: doc.id,
-    ...doc.data(),
-  }));
+  try {
+    console.log('Fetching current_sections from Firestore...');
+    const querySnapshot = await getDocs(collection(db, 'current_sections'));
+    const sections = querySnapshot.docs.map((doc) => ({
+      ...doc.data(),
+      id: doc.id,
+    }));
+    console.log(`Found ${sections.length} sections:`, sections);
+    return sections;
+  } catch (error) {
+    console.error('Error in getSections:', error);
+    throw error;
+  }
 }
 
 export async function deleteSection(id: string) {
@@ -45,17 +53,26 @@ export async function editSection({
 }
 
 export async function getItems(sectionId: string) {
-  const q = query(
-    collection(db, 'current_items'),
-    where('section_id', '==', sectionId),
-    orderBy('order', 'asc')
-  );
+  try {
+    console.log(`Fetching items for section ID: ${sectionId}`);
+    const q = query(
+      collection(db, 'current_items'),
+      where('section_id', '==', sectionId),
+      orderBy('order', 'asc')
+    );
 
-  const querySnapshot = await getDocs(q);
-  return querySnapshot.docs.map((doc) => ({
-    id: doc.id,
-    ...doc.data(),
-  }));
+    const querySnapshot = await getDocs(q);
+    const items = querySnapshot.docs.map((doc) => ({
+      ...doc.data(),
+      id: doc.id,
+    }));
+    console.log(`Items found for section ${sectionId}:`, items);
+    return items;
+  } catch (error) {
+    console.error(`Error in getItems for section ${sectionId}:`, error);
+    // Many Firestore errors (like missing index) provide a link in the error object.
+    throw error;
+  }
 }
 
 export async function deleteItem(id: string) {

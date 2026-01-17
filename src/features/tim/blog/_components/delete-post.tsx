@@ -12,7 +12,7 @@ import {
 import { Trash } from '@phosphor-icons/react';
 import useDeletePost from '../_hooks/useDeletePost';
 
-export default function DeletePost({ postId }: { postId: number }) {
+export default function DeletePost({ postId }: { postId: string }) {
   const { deletePost } = useDeletePost();
 
   return (

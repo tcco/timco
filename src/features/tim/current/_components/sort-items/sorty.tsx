@@ -12,7 +12,7 @@ export default function Sorty({
   onOrderChange: (newOrder: string[], items: ItemType[]) => void;
 }) {
   function findItem(itemId: string) {
-    return items.find((item) => item.id === +itemId);
+    return items.find((item) => item.id === itemId);
   }
 
   return (

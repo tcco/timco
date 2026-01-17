@@ -28,8 +28,10 @@ export async function removeAlbum(
     (album) => targetAlbum[0] !== album[0]
   );
 
-  // 3. Update the document
-  await updateDoc(doc(db, 'blog', postDoc.id), { albums: newAlbums });
+  // 3. Update the document with new format
+  await updateDoc(doc(db, 'blog', postDoc.id), {
+    albums: newAlbums.map(album => ({ photos: album }))
+  });
 
   // 4. (Optional) Delete images from storage.
   // Skipping for now to avoid URL parsing issues without 'refFromURL'.
