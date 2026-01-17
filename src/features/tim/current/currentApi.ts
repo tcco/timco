@@ -1,35 +1,35 @@
-import { supabase } from '@/services/supabase';
+import {
+  collection,
+  getDocs,
+  addDoc,
+  deleteDoc,
+  updateDoc,
+  doc,
+  query,
+  where,
+  orderBy,
+  writeBatch,
+} from 'firebase/firestore';
+import { db } from '@/services/firebase';
 
 export async function getSections() {
-  const { data: current_sections, error } = await supabase
-    .from('current_sections')
-    .select('*');
-
-  if (error) throw new Error(error.message);
-
-  return current_sections;
+  const querySnapshot = await getDocs(collection(db, 'current_sections'));
+  return querySnapshot.docs.map((doc) => ({
+    id: doc.id,
+    ...doc.data(),
+  }));
 }
 
-export async function deleteSection(id: number) {
-  const { data, error } = await supabase
-    .from('current_sections')
-    .delete()
-    .match({ id });
-
-  if (error) throw new Error(error.message);
-
-  return data;
+export async function deleteSection(id: string) {
+  await deleteDoc(doc(db, 'current_sections', id));
+  // Note: This does not automatically delete items in this section.
+  // In a real app we might want to query and batch delete items with section_id == id
+  return [{ id }];
 }
 
 export async function addSection(title: string) {
-  const { data, error } = await supabase
-    .from('current_sections')
-    .insert([{ title }])
-    .select();
-
-  if (error) throw new Error(error.message);
-
-  return data;
+  const docRef = await addDoc(collection(db, 'current_sections'), { title });
+  return [{ id: docRef.id, title }];
 }
 
 export async function editSection({
@@ -37,42 +37,30 @@ export async function editSection({
   id,
 }: {
   title: string;
-  id: number;
+  id: string; // Changed to string for Firestore ID
 }) {
-  const { data, error } = await supabase
-    .from('current_sections')
-    .update({ title })
-    .eq('id', id)
-    .select();
-
-  if (error) throw new Error(error.message);
-
-  return data;
+  const docRef = doc(db, 'current_sections', id);
+  await updateDoc(docRef, { title });
+  return [{ id, title }];
 }
 
-export async function getItems(sectionId: number) {
-  // get all items for from section id from newest to latest
+export async function getItems(sectionId: string) {
+  const q = query(
+    collection(db, 'current_items'),
+    where('section_id', '==', sectionId),
+    orderBy('order', 'asc')
+  );
 
-  const { data: current_sections, error } = await supabase
-    .from('current_items')
-    .select('*')
-    .eq('section_id', sectionId)
-    .order('order', { ascending: true });
-
-  if (error) throw new Error(error.message);
-
-  return current_sections;
+  const querySnapshot = await getDocs(q);
+  return querySnapshot.docs.map((doc) => ({
+    id: doc.id,
+    ...doc.data(),
+  }));
 }
 
-export async function deleteItem(id: number) {
-  const { data, error } = await supabase
-    .from('current_items')
-    .delete()
-    .match({ id });
-
-  if (error) throw new Error(error.message);
-
-  return data;
+export async function deleteItem(id: string) {
+  await deleteDoc(doc(db, 'current_items', id));
+  return [{ id }];
 }
 
 export async function addItem({
@@ -82,18 +70,13 @@ export async function addItem({
   link,
 }: {
   title: string;
-  section_id: number;
+  section_id: string;
   description?: string;
   link?: string;
 }) {
-  const { data, error } = await supabase
-    .from('current_items')
-    .insert([{ title, section_id, description, link }])
-    .select();
-
-  if (error) throw new Error(error.message);
-
-  return data;
+  const newItem = { title, section_id, description, link };
+  const docRef = await addDoc(collection(db, 'current_items'), newItem);
+  return [{ id: docRef.id, ...newItem }];
 }
 
 export async function editItem({
@@ -102,29 +85,24 @@ export async function editItem({
   description,
   link,
 }: {
-  id: number;
+  id: string;
   title: string;
   description: string;
   link: string;
 }) {
-  const { data, error } = await supabase
-    .from('current_items')
-    .update({ title, description, link })
-    .eq('id', id)
-    .select();
-
-  if (error) throw new Error(error.message);
-
-  return data;
+  const docRef = doc(db, 'current_items', id);
+  await updateDoc(docRef, { title, description, link });
+  return [{ id, title, description, link }];
 }
 
-export async function updateOrder(newOrder: { id: number; order: number }[]) {
-  const { data, error } = await supabase
-    .from('current_items')
-    .upsert(newOrder, { onConflict: 'id' })
-    .select();
+export async function updateOrder(newOrder: { id: string; order: number }[]) {
+  const batch = writeBatch(db);
 
-  if (error) throw new Error(error.message);
+  newOrder.forEach((item) => {
+    const docRef = doc(db, 'current_items', item.id);
+    batch.update(docRef, { order: item.order });
+  });
 
-  return data;
+  await batch.commit();
+  return newOrder;
 }
