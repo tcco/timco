@@ -14,7 +14,7 @@ function Gallery() {
 
   return (
     <div>
-      {error && (
+      {!!error && (
         <div className="p-4 mb-4 text-red-700 bg-red-100 rounded-lg">
           Error loading gallery: {(error as any)?.message || 'Check Storage Rules and console.'}
         </div>
