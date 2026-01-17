@@ -10,16 +10,19 @@ export default function useAddItem(section: Section) {
     title,
     description,
     link,
+    order,
   }: {
     title: string;
     description?: string;
     link?: string;
+    order?: number;
   }) {
     toast.promise(
       addItem({
         title,
         description,
         link,
+        order,
         section_id: section.id,
       }),
       {

@@ -85,15 +85,22 @@ export async function addItem({
   section_id,
   description,
   link,
+  order,
 }: {
   title: string;
   section_id: string;
   description?: string;
   link?: string;
+  order?: number;
 }) {
-  const newItem = { title, section_id, description, link };
-  const docRef = await addDoc(collection(db, 'current_items'), newItem);
-  return [{ id: docRef.id, ...newItem }];
+  const newItem = { title, section_id, description, link, order };
+  // Remove undefined fields to prevent Firebase invalid-argument error
+  const sanitizedItem = Object.fromEntries(
+    Object.entries(newItem).filter(([_, v]) => v !== undefined)
+  );
+
+  const docRef = await addDoc(collection(db, 'current_items'), sanitizedItem);
+  return [{ id: docRef.id, title, ...sanitizedItem }];
 }
 
 export async function editItem({
@@ -108,8 +115,14 @@ export async function editItem({
   link: string;
 }) {
   const docRef = doc(db, 'current_items', id);
-  await updateDoc(docRef, { title, description, link });
-  return [{ id, title, description, link }];
+  const updatedFields = { title, description, link };
+  // Remove undefined fields to prevent Firebase invalid-argument error
+  const sanitizedFields = Object.fromEntries(
+    Object.entries(updatedFields).filter(([_, v]) => v !== undefined)
+  );
+
+  await updateDoc(docRef, sanitizedFields);
+  return [{ id, ...sanitizedFields }];
 }
 
 export async function updateOrder(newOrder: { id: string; order: number }[]) {
