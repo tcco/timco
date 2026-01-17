@@ -58,7 +58,11 @@ export default function Section({ section }: { section: SectionType }) {
         )}
 
         <div className="flex gap-2">
-          <FormSectionItem onSubmit={(values) => createItem(values)}>
+          <FormSectionItem
+            onSubmit={(values) =>
+              createItem({ ...values, order: (data as any)?.length || 0 })
+            }
+          >
             <Button size={'sm'}>Add Item</Button>
           </FormSectionItem>
           {/* <AddItem section={section} /> */}
