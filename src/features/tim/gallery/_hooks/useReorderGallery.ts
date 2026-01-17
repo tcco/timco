@@ -10,7 +10,7 @@ export function useReorderGallery() {
 
   function reorderImages(
     image: {
-      id: number;
+      id: string;
       order: number;
     }[],
     onSuccess?: () => void

@@ -25,7 +25,7 @@ type ImgGallery = Database['public']['Tables']['gallery']['Row'];
 function Gallery() {
   const { data, isLoading: isDataLoading } = usePics();
   const { register, handleSubmit, reset } = useForm();
-  const [newOrder, setNewOrder] = useState<{ id: number; order: number }[]>([]);
+  const [newOrder, setNewOrder] = useState<{ id: string; order: number }[]>([]);
   const { addImage, loading: isLoading } = useAddImage();
   const { reorderImages } = useReorderGallery();
 
@@ -60,12 +60,12 @@ function Gallery() {
 
     const newGallery = newOrder
       .map((id, index) => {
-        const img = gallery.find((img) => img.id === +id);
+        const img = gallery.find((img) => img.id === id);
 
         if (img?.order === index) return;
 
         return {
-          id: +id,
+          id,
           order: index,
         };
       })
@@ -73,7 +73,7 @@ function Gallery() {
 
     console.log(newGallery);
 
-    setNewOrder(newGallery as { id: number; order: number }[]);
+    setNewOrder(newGallery as { id: string; order: number }[]);
   }
 
   return (
@@ -131,18 +131,18 @@ function Gallery() {
       ) : (
         <SortImage
           album={data ? data.map((img) => String(img.id)) : []}
-          onChange={(items) => handleReorderImage(items, data ? data : [])}
+          onChange={(items) => handleReorderImage(items, (data || []) as any)}
           render={(items) => {
             return (
               <div className="grid grid-cols-4 max-md:grid-cols-3 max-sm:grid-cols-2 gap-2">
-                {items.map((id) => (
+                {(items as string[]).map((id) => (
                   <Fragment key={id}>
                     <AlbumSortItem key={id} id={id}>
                       <GalleryItem
                         id={String(id)}
-                        src={data?.find((img) => img.id === +id)?.img as string}
+                        src={(data as any)?.find((img: any) => img.id === id)?.img as string}
                         alt={
-                          data?.find((img) => img.id === +id)?.name as string
+                          (data as any)?.find((img: any) => img.id === id)?.name as string
                         }
                       />
                     </AlbumSortItem>

@@ -5,7 +5,7 @@ import { editSection } from '@/features/tim/current/currentApi';
 export default function useEditSection() {
   const queryClient = useQueryClient();
 
-  function changeSectionTitle(title: string, id: number) {
+  function changeSectionTitle(title: string, id: string) {
     toast.promise(editSection({ title, id }), {
       loading: 'Changing section title...',
       success: (data) => {

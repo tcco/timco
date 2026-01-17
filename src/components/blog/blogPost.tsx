@@ -40,15 +40,15 @@ function BlogPost() {
             <img src={post.thumbnail as string} alt="post" className="mb-12" />
           )}
 
-          {post.content?.split('//=//=//=//').map((content, i) => (
-            <div className=" self-start text center">
+          {post.content?.split('//=//=//=//').map((content: string, i: number) => (
+            <div key={i} className=" self-start text center">
               <Markdown
                 children={content}
                 remarkPlugins={[remarkGfm]}
                 className=" text-start"
               />
 
-              <Album album={albums[i]} />
+              <Album album={albums?.[i]} />
             </div>
           ))}
         </div>

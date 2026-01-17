@@ -24,7 +24,7 @@ export default function Current() {
       <div className="flex flex-col gap-4">
         {sectionsLoading && <Loading size="medium" type="full" />}
         {data &&
-          data.map((section) => <Section key={section.id} section={section} />)}
+          (data as any[]).map((section) => <Section key={section.id} section={section} />)}
       </div>
     </div>
   );

@@ -12,17 +12,17 @@ export interface Database {
       album: {
         Row: {
           created_at: string
-          id: number
+          id: string
           images: string[] | null
         }
         Insert: {
           created_at?: string
-          id?: number
+          id?: string
           images?: string[] | null
         }
         Update: {
           created_at?: string
-          id?: number
+          id?: string
           images?: string[] | null
         }
         Relationships: []
@@ -35,7 +35,7 @@ export interface Database {
           content: string | null
           created_at: string
           draft: boolean
-          id: number
+          id: string
           thumbnail: string | null
           title: string
         }
@@ -46,7 +46,7 @@ export interface Database {
           content?: string | null
           created_at?: string
           draft?: boolean
-          id?: number
+          id?: string
           thumbnail?: string | null
           title?: string
         }
@@ -57,7 +57,7 @@ export interface Database {
           content?: string | null
           created_at?: string
           draft?: boolean
-          id?: number
+          id?: string
           thumbnail?: string | null
           title?: string
         }
@@ -67,28 +67,28 @@ export interface Database {
         Row: {
           created_at: string
           description: string | null
-          id: number
+          id: string
           link: string | null
           order: number
-          section_id: number | null
+          section_id: string | null
           title: string | null
         }
         Insert: {
           created_at?: string
           description?: string | null
-          id?: number
+          id?: string
           link?: string | null
           order?: number
-          section_id?: number | null
+          section_id?: string | null
           title?: string | null
         }
         Update: {
           created_at?: string
           description?: string | null
-          id?: number
+          id?: string
           link?: string | null
           order?: number
-          section_id?: number | null
+          section_id?: string | null
           title?: string | null
         }
         Relationships: [
@@ -104,17 +104,17 @@ export interface Database {
       current_sections: {
         Row: {
           created_at: string
-          id: number
+          id: string
           title: string | null
         }
         Insert: {
           created_at?: string
-          id?: number
+          id?: string
           title?: string | null
         }
         Update: {
           created_at?: string
-          id?: number
+          id?: string
           title?: string | null
         }
         Relationships: []
@@ -122,21 +122,21 @@ export interface Database {
       gallery: {
         Row: {
           created_at: string
-          id: number
+          id: string
           img: string | null
           name: string | null
           order: number
         }
         Insert: {
           created_at?: string
-          id?: number
+          id?: string
           img?: string | null
           name?: string | null
           order?: number
         }
         Update: {
           created_at?: string
-          id?: number
+          id?: string
           img?: string | null
           name?: string | null
           order?: number

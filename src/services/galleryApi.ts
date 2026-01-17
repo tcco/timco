@@ -25,42 +25,64 @@ export async function uploadImage(file: File) {
   await uploadBytes(storageRef, file);
   const url = await getDownloadURL(storageRef);
 
+  const snapshot = await getDocs(query(collection(db, 'gallery'), orderBy('order', 'desc')));
+  const lastOrder = snapshot.docs[0]?.data()?.order || 0;
+
   const docRef = await addDoc(collection(db, 'gallery'), {
     img: url,
     name: file.name,
-    storageName: imageName, // Storing this to easily delete later
+    storageName: imageName,
+    order: lastOrder + 1,
   });
 
-  return [{ id: docRef.id, img: url, name: file.name }];
+  return [{ id: docRef.id, img: url, name: file.name, order: lastOrder + 1 }];
 }
 
 export async function getImages() {
-  const q = query(collection(db, 'gallery'), orderBy('order', 'asc'));
-  const querySnapshot = await getDocs(q);
+  try {
+    console.log('Fetching gallery images...');
+    const q = query(collection(db, 'gallery'), orderBy('order', 'asc'));
+    const querySnapshot = await getDocs(q);
 
-  return querySnapshot.docs.map((doc) => ({
-    id: doc.id,
-    ...doc.data(),
-  }));
+    const images = querySnapshot.docs.map((doc) => ({
+      ...doc.data(),
+      id: doc.id,
+    }));
+    console.log('Gallery images fetched:', images);
+    return images;
+  } catch (error) {
+    console.error('Error in getImages:', error);
+    throw error;
+  }
 }
 
 export async function deleteImage({
   id,
   imageName,
+  imageUrl,
 }: {
   id: string;
-  imageName: string; // This needs to be the storage path/name now
+  imageName?: string;
+  imageUrl?: string;
 }) {
   await deleteDoc(doc(db, 'gallery', id));
 
-  // Assuming imageName passed here is the stored file name (not the full URL)
-  // If the previous code passed the full URL, we might need to extract the ref.
-  // Based on the old code: it passed `imageName` which was used in `storage.remove`.
-  // So it should be fine.
+  let finalPath = '';
+  if (imageName) {
+    finalPath = `images/${imageName}`;
+  } else if (imageUrl) {
+    // Extract path from Firebase Storage URL
+    // https://firebasestorage.googleapis.com/v0/b/[BUCKET]/o/[PATH]?alt=media
+    const match = imageUrl.match(/\/o\/([^?]+)/);
+    if (match) {
+      finalPath = decodeURIComponent(match[1]);
+    }
+  }
 
-  // Create a reference to the file to delete
-  const fileRef = ref(storage, `images/${imageName}`);
-  await deleteObject(fileRef);
+  if (finalPath) {
+    const fileRef = ref(storage, finalPath);
+    await deleteObject(fileRef);
+  }
 }
 
 export async function downloadImage(imageName: string) {

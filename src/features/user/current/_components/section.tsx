@@ -5,7 +5,7 @@ import Item from './item';
 
 type Section = Database['public']['Tables']['current_sections']['Row'];
 function Section({ section }: { section: Section }) {
-  const { data, isLoading } = useQuery(['section', [section.id]], {
+  const { data, isLoading } = useQuery(['section', section.id], {
     queryFn: () => getItems(section.id),
   });
 
@@ -19,7 +19,7 @@ function Section({ section }: { section: Section }) {
       {isLoading && 'Loading...'}
       <div className=" space-y-2">
         <ul className="grid grid-cols-1 gap-2 items-start">
-          {data?.map((item) => (
+          {data?.map((item: any) => (
             <Item key={item.id} item={item} />
           ))}
         </ul>

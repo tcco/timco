@@ -111,7 +111,7 @@ export default function Section({ section }: { section: SectionType }) {
       {isLoading && 'Loading...'}
       <div className=" space-y-2">
         <ul className="grid grid-cols-1 gap-2 items-start">
-          {data && <Sorty items={data} onOrderChange={handleReorderItems} />}
+          {data && <Sorty items={data as any} onOrderChange={handleReorderItems} />}
         </ul>
       </div>
     </div>
