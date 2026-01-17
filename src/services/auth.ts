@@ -1,4 +1,10 @@
-import { supabase } from './supabase';
+import {
+  createUserWithEmailAndPassword,
+  signInWithEmailAndPassword,
+  signOut,
+  updateProfile,
+} from 'firebase/auth';
+import { auth } from './firebase';
 
 export async function signup({
   firstName,
@@ -11,21 +17,21 @@ export async function signup({
   email: string;
   password: string;
 }) {
-  const { data, error } = await supabase.auth.signUp({
+  const userCredential = await createUserWithEmailAndPassword(
+    auth,
     email,
-    password,
-    options: {
-      data: {
-        firstName,
-        lastName,
-      },
-    },
-  });
+    password
+  );
 
-  if (error) throw new Error(error.message);
+  if (userCredential.user) {
+    await updateProfile(userCredential.user, {
+      displayName: `${firstName} ${lastName}`,
+    });
+  }
 
-  return data;
+  return userCredential.user;
 }
+
 export async function login({
   email,
   password,
@@ -33,29 +39,20 @@ export async function login({
   email: string;
   password: string;
 }) {
-  const { data, error } = await supabase.auth.signInWithPassword({
+  const userCredential = await signInWithEmailAndPassword(
+    auth,
     email,
-    password,
-  });
+    password
+  );
 
-  if (error) throw new Error(error.message);
-
-  return data;
+  return userCredential.user;
 }
 
 export async function getCurrentUser() {
-  const { data: session } = await supabase.auth.getSession();
-  if (!session.session) return null;
-
-  const { data, error } = await supabase.auth.getUser();
-
-  if (error) throw new Error(error.message);
-
-  return data?.user;
+  await auth.authStateReady();
+  return auth.currentUser;
 }
 
 export async function logOut() {
-  const { error } = await supabase.auth.signOut();
-
-  if (error) throw new Error(error.message);
+  await signOut(auth);
 }

@@ -1,27 +1,38 @@
-import { supabase } from '@/services/supabase';
+import {
+  collection,
+  query,
+  where,
+  getDocs,
+  updateDoc,
+  doc,
+} from 'firebase/firestore';
+import { db } from '@/services/firebase';
 
 export async function removeAlbum(
   postTitle: string,
   targetAlbum: string[],
   originalAlbum: string[][]
 ) {
-  const paths = targetAlbum.map((image) => image.split('/').at(-1)) as string[];
+  // 1. Find the blog post by title
+  const q = query(collection(db, 'blog'), where('title', '==', postTitle));
+  const querySnapshot = await getDocs(q);
 
+  if (querySnapshot.empty) {
+    throw new Error('Post not found');
+  }
+
+  const postDoc = querySnapshot.docs[0];
+
+  // 2. Filter out the album
   const newAlbums = originalAlbum.filter(
     (album) => targetAlbum[0] !== album[0]
   );
 
-  const { error: deleteError } = await supabase.storage
-    .from('images')
-    .remove(paths);
+  // 3. Update the document
+  await updateDoc(doc(db, 'blog', postDoc.id), { albums: newAlbums });
 
-  if (deleteError) throw new Error(deleteError.message);
-
-  const { error } = await supabase
-    .from('blog')
-    .update({ albums: newAlbums })
-    .eq('title', postTitle)
-    .select();
-
-  if (error) throw new Error(error.message);
+  // 4. (Optional) Delete images from storage.
+  // Skipping for now to avoid URL parsing issues without 'refFromURL'.
+  // const paths = targetAlbum.map((image) => image.split('/').at(-1)) as string[];
+  // await Promise.all(paths.map(path => deleteObject(ref(storage, `images/${path}`))));
 }

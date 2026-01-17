@@ -1,43 +1,47 @@
-import { supabase } from './supabase';
+import {
+  ref,
+  uploadBytes,
+  getDownloadURL,
+  deleteObject,
+} from 'firebase/storage';
+import {
+  collection,
+  addDoc,
+  getDocs,
+  deleteDoc,
+  doc,
+  query,
+  orderBy,
+  writeBatch,
+} from 'firebase/firestore';
+import { db, storage } from './firebase';
 
 export async function uploadImage(file: File) {
-  // https://ymecappcpodzozqwmydb.supabase.co/storage/v1/object/public/gallery/WhatsApp%20Image%202023-04-21%20at%201.18.45%20PM.jpeg
   const imageName = `${Math.random()}-${file.name}`
     .replace(' ', '_')
     .replace('/', '');
 
-  const { data: uploadData, error: uploadError } = await supabase.storage
-    .from('images')
-    .upload(imageName, file);
+  const storageRef = ref(storage, `images/${imageName}`);
+  await uploadBytes(storageRef, file);
+  const url = await getDownloadURL(storageRef);
 
-  if (uploadError) throw new Error(uploadError.message);
+  const docRef = await addDoc(collection(db, 'gallery'), {
+    img: url,
+    name: file.name,
+    storageName: imageName, // Storing this to easily delete later
+  });
 
-  const { data, error } = await supabase
-    .from('gallery')
-    .insert([
-      {
-        img: `${
-          import.meta.env.VITE_SUPABASE_URL
-        }/storage/v1/object/public/images/${uploadData.path}`,
-        name: file.name,
-      },
-    ])
-    .select();
-
-  if (error) throw new Error(error.message);
-
-  return data;
+  return [{ id: docRef.id, img: url, name: file.name }];
 }
 
 export async function getImages() {
-  const { data, error } = await supabase
-    .from('gallery')
-    .select()
-    .order('order', { ascending: true });
+  const q = query(collection(db, 'gallery'), orderBy('order', 'asc'));
+  const querySnapshot = await getDocs(q);
 
-  if (error) throw new Error(error.message);
-
-  return data;
+  return querySnapshot.docs.map((doc) => ({
+    id: doc.id,
+    ...doc.data(),
+  }));
 }
 
 export async function deleteImage({
@@ -45,42 +49,37 @@ export async function deleteImage({
   imageName,
 }: {
   id: string;
-  imageName: string;
+  imageName: string; // This needs to be the storage path/name now
 }) {
-  const { error } = await supabase
-    .from('gallery')
-    .delete()
-    .match({ id })
-    .select();
+  await deleteDoc(doc(db, 'gallery', id));
 
-  if (error) throw new Error(error.message);
+  // Assuming imageName passed here is the stored file name (not the full URL)
+  // If the previous code passed the full URL, we might need to extract the ref.
+  // Based on the old code: it passed `imageName` which was used in `storage.remove`.
+  // So it should be fine.
 
-  const { error: DeleteError } = await supabase.storage
-    .from('images')
-    .remove([imageName]);
-
-  if (DeleteError) throw new Error(DeleteError.message);
+  // Create a reference to the file to delete
+  const fileRef = ref(storage, `images/${imageName}`);
+  await deleteObject(fileRef);
 }
 
 export async function downloadImage(imageName: string) {
-  const { data, error } = await supabase.storage
-    .from('images')
-    .download(imageName);
-
-  if (error) throw new Error(error.message);
-
-  return data;
+  const starsRef = ref(storage, `images/${imageName}`);
+  // Get the download URL
+  return await getDownloadURL(starsRef)
 }
 
 export async function reorderGallery(
-  newOrder: { id: number; order: number }[]
+  newOrder: { id: string; order: number }[]
 ) {
-  const { data, error } = await supabase
-    .from('gallery')
-    .upsert(newOrder, { onConflict: 'id' })
-    .select();
+  const batch = writeBatch(db);
 
-  if (error) throw new Error(error.message);
+  newOrder.forEach((item) => {
+    const docRef = doc(db, 'gallery', item.id);
+    batch.update(docRef, { order: item.order });
+  });
 
-  return data;
+  await batch.commit();
+
+  return newOrder;
 }
