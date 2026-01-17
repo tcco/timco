@@ -57,7 +57,7 @@
     "react-router-dom": "^6.15.0",
     "remark-gfm": "^3.0.1",
     "sass": "^1.66.1",
-    "styled-components": "^6.0.7",
+    "styled-components": "^6.3.8",
     "tailwind-merge": "^1.14.0",
     "tailwindcss-animate": "^1.0.7",
     "yet-another-react-lightbox": "^3.12.2",

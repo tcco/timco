@@ -122,7 +122,7 @@ export async function editItem({
   );
 
   await updateDoc(docRef, sanitizedFields);
-  return [{ id, ...sanitizedFields }];
+  return [{ id, title, ...sanitizedFields }];
 }
 
 export async function updateOrder(newOrder: { id: string; order: number }[]) {
