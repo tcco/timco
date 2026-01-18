@@ -25,3 +25,4 @@ dist-ssr
 
 firebase-service-account.json
 .secret.env
+.env
