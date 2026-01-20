@@ -1,28 +1,19 @@
 import { deletePost as removePost } from '@/services/blogApi';
-import { useState } from 'react';
 import toast from 'react-hot-toast';
-import { useQueryClient } from 'react-query';
+import { useQueryClient, useMutation } from 'react-query';
 
 export default function useDeletePost() {
-  const [loading, setLoading] = useState(false);
   const queryClient = useQueryClient();
 
-  function deletePost(id: string) {
-    setLoading(true);
+  const { mutate: deletePost, isLoading: deleting } = useMutation(removePost, {
+    onSuccess: () => {
+      queryClient.invalidateQueries(['blog']);
+      toast.success('Post deleted successfully');
+    },
+    onError: (error: any) => {
+      toast.error(`Failed to delete post: ${error.message || error}`);
+    },
+  });
 
-    toast.promise(removePost(id), {
-      loading: 'Deleting post...',
-      success() {
-        setLoading(false);
-        queryClient.invalidateQueries(['blog']);
-        return 'Post deleted successfully';
-      },
-      error() {
-        setLoading(false);
-        return 'Failed to delete post';
-      },
-    });
-  }
-
-  return { deletePost, deleting: loading };
+  return { deletePost, deleting };
 }

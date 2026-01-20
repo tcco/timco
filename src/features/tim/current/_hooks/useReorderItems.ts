@@ -1,40 +1,38 @@
 import toast from 'react-hot-toast';
-import { useQueryClient } from 'react-query';
+import { useQueryClient, useMutation } from 'react-query';
 import { updateOrder } from '../currentApi';
-import { useState } from 'react';
+import { useState, useCallback } from 'react';
 import { Item } from '../_types/types';
 
 export default function useReorderItems({ sectionId }: { sectionId: string }) {
   const [newOrder, setNewOrder] = useState<{ id: string; order: number }[]>([]);
   const queryClient = useQueryClient();
 
-  function handleReorderItems(newOrder: string[], items: Item[]) {
-    const newItems = newOrder
-      .map((id, index) => {
-        const img = items.find((item) => item.id === id);
-
-        if (img?.order === index) return;
-
-        return {
-          id,
-          order: index,
-        };
-      })
-      .filter((img) => img !== undefined);
-
-    setNewOrder(newItems as { id: string; order: number }[]);
-  }
-
-  function changeItemsOrder() {
-    toast.promise(updateOrder(newOrder), {
-      loading: 'Changing section order...',
-      success: () => {
-        queryClient.invalidateQueries(['sections', sectionId]);
+  const { mutate: changeItemsOrder, isLoading: isReordering } = useMutation(
+    () => updateOrder(newOrder),
+    {
+      onSuccess: () => {
+        queryClient.invalidateQueries(['section', sectionId]);
         setNewOrder([]);
-        return `Section reordered successfully!`;
+        toast.success(`Section reordered successfully!`);
       },
-      error: (error) => `Could not reorder this section (${error})`,
-    });
-  }
-  return { changeItemsOrder, handleReorderItems, newOrder };
+      onError: (error: any) => {
+        toast.error(`Could not reorder this section (${error.message || error})`);
+      },
+    }
+  );
+
+  const handleReorderItems = useCallback((newOrderIds: string[], items: Item[]) => {
+    const newItems = newOrderIds
+      .map((id, index) => {
+        const item = items.find((i) => i.id === id);
+        if (item?.order === index) return;
+        return { id, order: index };
+      })
+      .filter((item): item is { id: string; order: number } => item !== undefined);
+
+    setNewOrder(newItems);
+  }, []);
+
+  return { changeItemsOrder, handleReorderItems, newOrder, isReordering };
 }

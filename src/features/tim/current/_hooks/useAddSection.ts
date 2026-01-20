@@ -1,20 +1,22 @@
 import toast from 'react-hot-toast';
-import { useQueryClient } from 'react-query';
-import { addSection } from '@/features/tim/current/currentApi';
+import { useQueryClient, useMutation } from 'react-query';
+import { addSection as addSectionApi } from '@/features/tim/current/currentApi';
 
 export default function useAddSection() {
   const queryClient = useQueryClient();
 
-  function createSection(title: string) {
-    toast.promise(addSection(title), {
-      loading: 'Adding section...',
-      success: (data) => {
+  const { mutate: createSection, isLoading: isAdding } = useMutation(
+    addSectionApi,
+    {
+      onSuccess: (data) => {
         queryClient.invalidateQueries(['sections']);
-        return `Section ${data[0].title} added successfully`;
+        toast.success(`Section ${data[0].title} added successfully`);
       },
-      error: (error) => `Could not add section (${error})`,
-    });
-  }
+      onError: (error: any) => {
+        toast.error(`Could not add section (${error.message || error})`);
+      },
+    }
+  );
 
-  return { createSection };
+  return { createSection, isAdding };
 }

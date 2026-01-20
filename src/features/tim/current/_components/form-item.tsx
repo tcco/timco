@@ -47,7 +47,7 @@ export default function FormSectionItem({ defaultValues, onSubmit, children }: P
 
   return (
     <Dialog>
-      <DialogTrigger>
+      <DialogTrigger asChild>
         {children}
       </DialogTrigger>
       <DialogContent>

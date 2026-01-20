@@ -1,37 +1,26 @@
 import { reorderGallery } from '@/services/galleryApi';
-import { useState } from 'react';
 import toast from 'react-hot-toast';
-import { useQueryClient } from 'react-query';
+import { useQueryClient, useMutation } from 'react-query';
 
 export function useReorderGallery() {
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState(false);
   const queryClient = useQueryClient();
 
-  function reorderImages(
-    image: {
-      id: string;
-      order: number;
-    }[],
-    onSuccess?: () => void
-  ) {
-    setLoading(true);
-    toast.promise(reorderGallery(image), {
-      loading: 'Uploading image...',
-      success: () => {
-        setLoading(false);
+  const { mutate: reorderImages, isLoading: loading, error } = useMutation(
+    ({ images, onSuccess }: { images: { id: string; order: number }[]; onSuccess?: () => void }) =>
+      reorderGallery(images).then(() => onSuccess?.()),
+    {
+      onMutate: () => {
+        return toast.loading('Reordering images...');
+      },
+      onSuccess: (_, __, toastId) => {
         queryClient.invalidateQueries(['gallery']);
-        onSuccess?.();
-
-        return 'Image uploaded!';
+        toast.success('Gallery reordered!', { id: toastId as string });
       },
-      error: () => {
-        setLoading(false);
-        setError(true);
-        return 'Failed to upload image';
+      onError: (err: any, _, toastId) => {
+        toast.error(`Failed to reorder: ${err.message || err}`, { id: toastId as string });
       },
-    });
-  }
+    }
+  );
 
   return { loading, reorderImages, error };
 }

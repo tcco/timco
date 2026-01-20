@@ -14,7 +14,7 @@ import GalleryItem from './_components/galleryItem';
 import Header from '../_components/header';
 import SortImage from '@/components/album-sort/drag';
 import { AlbumSortItem } from '@/components/album-sort/album-sort-item';
-import { Fragment, useState } from 'react';
+import { Fragment, useState, useMemo, useCallback } from 'react';
 import { Database } from '@/types/schema';
 import { useAddImage } from './_hooks/useAddImg';
 import { DialogClose } from '@radix-ui/react-dialog';
@@ -40,25 +40,28 @@ function Gallery() {
   //   },
   // });
 
-  function onSubmit(data: any) {
+  const onSubmit = useCallback((data: any) => {
     const image: FileList =
       typeof data.image === 'string' ? data.image : data.image;
 
     Array.from(image).map((file) =>
-      addImage(file, () => {
-        reset();
+      addImage({
+        image: file,
+        onSuccess: () => {
+          reset();
+        },
       })
     );
-  }
+  }, [addImage, reset]);
 
-  function onError(errors: any) {
+  const onError = useCallback((errors: any) => {
     console.log(errors);
-  }
+  }, []);
 
-  function handleReorderImage(newOrder: string[], gallery: ImgGallery[]) {
+  const handleReorderImage = useCallback((newOrderIds: string[], gallery: ImgGallery[]) => {
     if (gallery.length === 0) return;
 
-    const newGallery = newOrder
+    const newGallery = newOrderIds
       .map((id, index) => {
         const img = gallery.find((img) => img.id === id);
 
@@ -69,12 +72,14 @@ function Gallery() {
           order: index,
         };
       })
-      .filter((img) => img !== undefined);
+      .filter((img): img is { id: string; order: number } => img !== undefined);
 
-    console.log(newGallery);
+    setNewOrder(newGallery);
+  }, []);
 
-    setNewOrder(newGallery as { id: string; order: number }[]);
-  }
+  const albumIds = useMemo(() => 
+    data ? data.map((img) => String(img.id)) : [], 
+  [data]);
 
   return (
     <div className=" space-y-8 max-md:space-y-2">
@@ -83,7 +88,7 @@ function Gallery() {
           <Button
             className="max-md:h-8 max-md:text-xs"
             onClick={() => {
-              reorderImages(newOrder);
+              reorderImages({ images: newOrder });
             }}
           >
             Save new order
@@ -91,7 +96,7 @@ function Gallery() {
         )}
 
         <Dialog>
-          <DialogTrigger>
+          <DialogTrigger asChild>
             <Button className="max-md:h-8 max-md:text-xs">
               Upload new memories
             </Button>
@@ -114,10 +119,11 @@ function Gallery() {
                 multiple
                 className="text-base text-gray-8"
                 disabled={isLoading}
+                data-testid="gallery-file-input"
               />
 
-              <DialogClose>
-                <Button type="submit" disabled={isLoading}>
+              <DialogClose asChild>
+                <Button type="submit" disabled={isLoading} data-testid="gallery-upload-submit">
                   {isLoading ? 'Uploading...' : 'Upload'}
                 </Button>
               </DialogClose>
@@ -130,24 +136,27 @@ function Gallery() {
         'loading'
       ) : (
         <SortImage
-          album={data ? data.map((img) => String(img.id)) : []}
+          album={albumIds}
           onChange={(items) => handleReorderImage(items, (data || []) as any)}
           render={(items) => {
             return (
               <div className="grid grid-cols-4 max-md:grid-cols-3 max-sm:grid-cols-2 gap-2">
-                {(items as string[]).map((id) => (
-                  <Fragment key={id}>
-                    <AlbumSortItem key={id} id={id}>
-                      <GalleryItem
-                        id={String(id)}
-                        src={(data as any)?.find((img: any) => img.id === id)?.img as string}
-                        alt={
-                          (data as any)?.find((img: any) => img.id === id)?.name as string
-                        }
-                      />
-                    </AlbumSortItem>
-                  </Fragment>
-                ))}
+                {(items as string[]).map((id) => {
+                  const imgData = (data as any)?.find((img: any) => img.id === id);
+                  if (!imgData) return null;
+                  return (
+                    <Fragment key={id}>
+                      <AlbumSortItem key={id} id={id}>
+                        <GalleryItem
+                          id={String(id)}
+                          src={imgData.img as string}
+                          alt={imgData.name as string}
+                          storageName={imgData.storageName as string}
+                        />
+                      </AlbumSortItem>
+                    </Fragment>
+                  );
+                })}
               </div>
             );
           }}

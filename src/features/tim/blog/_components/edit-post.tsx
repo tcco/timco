@@ -77,7 +77,7 @@ export default function EditPost({ defaultValues }: Props) {
             category: defaultValues.category,
             content: defaultValues.content as string,
             thumbnail: defaultValues.thumbnail,
-            oldAlbums: defaultValues.albums,
+            oldAlbums: defaultValues.albums as string[][] | undefined,
           }}
         />
       </SheetContent>
