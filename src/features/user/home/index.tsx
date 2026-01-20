@@ -52,6 +52,8 @@ const letter = {
 const Model = ({ imageDetails }: ModelProps) => {
   const { scrollYProgress } = useScroll();
   const scale = useTransform(scrollYProgress, [0, 8], [1, 1.3]);
+  const y = useTransform(scrollYProgress, [0, 1], [0, -100]);
+  const yText = useTransform(scrollYProgress, [0, 1], [0, 200]);   // Moves down as you scroll
 
   const [canScroll, setCanScroll] = useState(false);
 
@@ -76,7 +78,7 @@ const Model = ({ imageDetails }: ModelProps) => {
         <div className="container fluid">
           <div className="row center top-row">
             <div className="top">
-              <motion.div className="model">
+              <motion.div className="model" style={{ y: yText }}>
                 <motion.span className="first" variants={firstName}>
                   <motion.span variants={letter}>T</motion.span>
                   <motion.span variants={letter}>I</motion.span>
@@ -95,17 +97,15 @@ const Model = ({ imageDetails }: ModelProps) => {
               <div className="image-container-single">
                 <motion.div
                   initial={{
-                    y: '-50%',
-                    width: imageDetails.width,
-                    height: imageDetails.height,
+                    width: 0,
+                    height: 0,
                   }}
                   animate={{
-                    y: 0,
-                    width: '100%',
-                    radius: '',
-                    height: '100%',
-                    transition: { delay: 0.2, ...transition },
+                    width: 350,
+                    height: 450,
+                    transition: { delay: 0.6, ...transition, duration: 1 },
                   }}
+                  style={{ y }}
                   className="thumbnail-single"
                 >
                   <motion.div
@@ -123,7 +123,6 @@ const Model = ({ imageDetails }: ModelProps) => {
                       }}
                       animate={{
                         transition: { delay: 0.2, ...transition },
-                        // y: window.innerWidth > 1440 ? -1200 : -500,
                       }}
                       className="object-cover object-bottom max-lg:object-center max-md:object-center"
                     />
