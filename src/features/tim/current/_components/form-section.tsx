@@ -45,7 +45,7 @@ export default function FormSection({
 
   return (
     <Dialog>
-      <DialogTrigger>{children}</DialogTrigger>
+      <DialogTrigger asChild>{children}</DialogTrigger>
       <DialogContent>
         <DialogHeader>
           <DialogTitle>Add new Section</DialogTitle>
@@ -73,7 +73,7 @@ export default function FormSection({
                 </FormItem>
               )}
             />
-            <DialogClose className="self-end">
+            <DialogClose asChild>
               <Button type="submit" disabled={form.formState.isSubmitting}>
                 {form.formState.isSubmitting ? 'Adding...' : 'Add'}
               </Button>

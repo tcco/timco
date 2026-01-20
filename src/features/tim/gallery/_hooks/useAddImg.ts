@@ -1,31 +1,26 @@
 import { uploadImage } from '@/services/galleryApi';
-import { useState } from 'react';
 import toast from 'react-hot-toast';
-import { useQueryClient } from 'react-query';
+import { useQueryClient, useMutation } from 'react-query';
 
 export function useAddImage() {
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState(false);
   const queryClient = useQueryClient();
 
-  function addImage(image: File, onSuccess: () => void) {
-    setLoading(true);
-    toast.promise(uploadImage(image), {
-      loading: 'Uploading image...',
-      success: () => {
-        setLoading(false);
+  const { mutate: addImage, isLoading: loading, error } = useMutation(
+    ({ image, onSuccess }: { image: File; onSuccess: () => void }) =>
+      uploadImage(image).then(onSuccess),
+    {
+      onMutate: () => {
+        return toast.loading('Uploading image...');
+      },
+      onSuccess: (_, __, toastId) => {
         queryClient.invalidateQueries(['gallery']);
-        onSuccess();
-
-        return 'Image uploaded!';
+        toast.success('Image uploaded!', { id: toastId as string });
       },
-      error: () => {
-        setLoading(false);
-        setError(true);
-        return 'Failed to upload image';
+      onError: (err: any, _, toastId) => {
+        toast.error(`Failed to upload image: ${err.message || err}`, { id: toastId as string });
       },
-    });
-  }
+    }
+  );
 
   return { loading, addImage, error };
 }

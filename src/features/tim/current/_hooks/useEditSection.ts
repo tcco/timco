@@ -1,19 +1,22 @@
 import toast from 'react-hot-toast';
-import { useQueryClient } from 'react-query';
+import { useQueryClient, useMutation } from 'react-query';
 import { editSection } from '@/features/tim/current/currentApi';
 
 export default function useEditSection() {
   const queryClient = useQueryClient();
 
-  function changeSectionTitle(title: string, id: string) {
-    toast.promise(editSection({ title, id }), {
-      loading: 'Changing section title...',
-      success: (data) => {
+  const { mutate: changeSectionTitle, isLoading: isEditing } = useMutation(
+    editSection,
+    {
+      onSuccess: (data) => {
         queryClient.invalidateQueries(['sections']);
-        return `Section ${data[0].title} edited successfully`;
+        toast.success(`Section ${data[0].title} edited successfully`);
       },
-      error: (error) => `Could not change title (${error})`,
-    });
-  }
-  return { changeSectionTitle };
+      onError: (error: any) => {
+        toast.error(`Could not change title (${error.message || error})`);
+      },
+    }
+  );
+
+  return { changeSectionTitle, isEditing };
 }

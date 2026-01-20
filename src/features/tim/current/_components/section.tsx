@@ -1,4 +1,17 @@
 import Loading from '@/components/Loading';
+import { Button } from '@/components/ui/button';
+import { Section as SectionType, Item } from '../_types/types.d';
+import { useQuery } from 'react-query';
+import { useCallback } from 'react';
+import { getItems } from '@/features/tim/current/currentApi';
+import Sorty from './sort-items/sorty';
+import useReorderItems from '../_hooks/useReorderItems';
+import useAddItem from '../_hooks/useAddItem';
+import useEditSection from '../_hooks/useEditSection';
+import useDeleteSection from '../_hooks/useDeleteSection';
+import FormSection from './form-section';
+import FormSectionItem from './form-item';
+import { Pencil, Trash } from '@phosphor-icons/react';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -10,114 +23,124 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from '@/components/ui/alert-dialog';
-import { Button } from '@/components/ui/button';
-import { useToast } from '@/components/ui/use-toast';
-import { deleteSection, getItems } from '@/features/tim/current/currentApi';
-import { Pencil, Trash } from '@phosphor-icons/react';
-import { useMutation, useQuery, useQueryClient } from 'react-query';
-import FormSection from './form-section';
-import useEditSection from '../_hooks/useEditSection';
-import FormSectionItem from './form-item';
-import useAddItem from '../_hooks/useAddItem';
-import { Section as SectionType } from '../_types/types';
-import Sorty from './sort-items/sorty';
-import useReorderItems from '../_hooks/useReorderItems';
 
 export default function Section({ section }: { section: SectionType }) {
-  const queryClient = useQueryClient();
-  const { toast } = useToast();
-  const { changeSectionTitle } = useEditSection();
-  const { createItem } = useAddItem(section);
+  const { changeSectionTitle, isEditing } = useEditSection();
+  const { createItem, isAdding } = useAddItem(section);
+  const { removeSection, deleteLoading } = useDeleteSection();
 
-  const { changeItemsOrder, handleReorderItems, newOrder } = useReorderItems({
-    sectionId: section.id,
+  const { changeItemsOrder, handleReorderItems, newOrder, isReordering } = 
+    useReorderItems({ sectionId: section.id });
+
+  const { data: items, isLoading } = useQuery<Item[]>(['section', section.id], {
+    queryFn: () => getItems(section.id) as Promise<Item[]>,
   });
 
-  const { data, isLoading } = useQuery(['section', section.id], {
-    queryFn: () => getItems(section.id),
-  });
+  const handleCreateItem = useCallback((values: any) => {
+    createItem({ ...values, order: items?.length || 0 });
+  }, [createItem, items?.length]);
 
-  const { mutate, isLoading: deleteLoading } = useMutation(deleteSection, {
-    onSuccess: () => {
-      queryClient.invalidateQueries(['sections']);
-      toast({
-        title: 'Section deleted',
-      });
-    },
-  });
+  const handleChangeTitle = useCallback((values: { title: string }) => {
+    changeSectionTitle({ title: values.title, id: section.id });
+  }, [changeSectionTitle, section.id]);
 
   return (
-    <div>
-      <div className="flex justify-between items-center mb-2">
-        <h2 className="text-xl font-semibold text-neutral-800">
+    <div className="bg-white p-4 rounded-xl border border-neutral-200 shadow-sm">
+      <div className="flex justify-between items-center mb-4">
+        <h2 className="text-xl font-bold text-neutral-900 tracking-tight">
           {section.title}
         </h2>
 
-        {newOrder.length > 0 && (
-          <Button onClick={() => changeItemsOrder()}>Save New Order</Button>
-        )}
+        <div className="flex items-center gap-2">
+          {newOrder.length > 0 && (
+            <Button 
+              onClick={() => changeItemsOrder()} 
+              disabled={isReordering}
+              variant="secondary"
+              size="sm"
+            >
+              {isReordering ? 'Saving...' : 'Save Order'}
+            </Button>
+          )}
 
-        <div className="flex gap-2">
           <FormSectionItem
-            onSubmit={(values) =>
-              createItem({ ...values, order: (data as any)?.length || 0 })
-            }
+            onSubmit={handleCreateItem}
           >
-            <Button size={'sm'}>Add Item</Button>
+            <Button size="sm" variant="default" disabled={isAdding}>
+              {isAdding ? 'Adding...' : 'Add Item'}
+            </Button>
           </FormSectionItem>
-          {/* <AddItem section={section} /> */}
+
           <FormSection
-            onSubmit={(values) => changeSectionTitle(values.title, section.id)}
+            onSubmit={handleChangeTitle}
             defaultValues={{
               title: section.title!,
             }}
           >
             <Button
-              size={'icon'}
-              className="text-lg transition-all h-8 w-8 "
-              variant={'outline'}
+              size="icon"
+              variant="outline"
+              className="h-8 w-8 text-neutral-600 hover:text-neutral-900"
+              disabled={isEditing}
             >
-              <Pencil weight="bold" />
+              <Pencil size={18} weight="bold" />
             </Button>
           </FormSection>
+
           <AlertDialog>
-            <AlertDialogTrigger>
+            <AlertDialogTrigger asChild>
               <Button
-                size={'icon'}
-                variant={'ghost'}
-                className="text-white text-lg bg-red-500 transition-all hover:bg-red-400 h-8 w-8 hover:text-red-50"
+                size="icon"
+                variant="destructive"
+                className="h-8 w-8"
+                disabled={deleteLoading}
               >
                 {deleteLoading ? (
                   <Loading type="self" size="small" />
                 ) : (
-                  <Trash weight="bold" />
+                  <Trash size={18} weight="bold" />
                 )}
               </Button>
             </AlertDialogTrigger>
             <AlertDialogContent>
               <AlertDialogHeader>
-                <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
+                <AlertDialogTitle>Delete Section?</AlertDialogTitle>
                 <AlertDialogDescription>
-                  This action cannot be undone. This will permanently delete
-                  this section and all items in this section.
+                  This will permanently remove <strong>{section.title}</strong> and all its items. This action cannot be undone.
                 </AlertDialogDescription>
               </AlertDialogHeader>
               <AlertDialogFooter>
                 <AlertDialogCancel>Cancel</AlertDialogCancel>
-                <AlertDialogAction onClick={() => mutate(section.id)}>
-                  Continue
+                <AlertDialogAction 
+                  onClick={() => removeSection(section.id)}
+                  className="bg-red-600 hover:bg-red-700"
+                >
+                  Delete
                 </AlertDialogAction>
               </AlertDialogFooter>
             </AlertDialogContent>
           </AlertDialog>
         </div>
       </div>
-      {isLoading && 'Loading...'}
-      <div className=" space-y-2">
-        <ul className="grid grid-cols-1 gap-2 items-start">
-          {data && <Sorty items={data as any} onOrderChange={handleReorderItems} />}
-        </ul>
-      </div>
+
+      {isLoading ? (
+        <div className="py-8 flex justify-center">
+          <Loading type="self" size="medium" />
+        </div>
+      ) : (
+        <div className="space-y-2">
+          {items && items.length > 0 ? (
+            <ul className="grid grid-cols-1 gap-3">
+              <Sorty 
+                items={items} 
+                onOrderChange={handleReorderItems} 
+              />
+            </ul>
+          ) : (
+            <p className="text-sm text-neutral-500 italic py-2">No items in this section.</p>
+          )}
+        </div>
+      )}
     </div>
   );
 }

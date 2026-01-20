@@ -27,17 +27,24 @@ export default function SortImage({
   onChange: (album: string[]) => void;
 }) {
   const [items, setItems] = useState(album);
+
+  useEffect(() => {
+    // Only reset if the actual items contained in the album changed (e.g. addition/deletion)
+    // Or if we need to sync back from the server after a successful save
+    const currentSorted = [...items].sort().join(',');
+    const propSorted = [...album].sort().join(',');
+    
+    if (currentSorted !== propSorted) {
+      setItems(album);
+    }
+  }, [album]);
+
   const sensors = useSensors(
     useSensor(PointerSensor),
     useSensor(KeyboardSensor, {
       coordinateGetter: sortableKeyboardCoordinates,
     })
   );
-
-  useEffect(() => {
-    onChange(items);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [items]);
 
   return (
     <DndContext
@@ -46,15 +53,7 @@ export default function SortImage({
       onDragEnd={handleDragEnd}
     >
       <SortableContext items={items} strategy={rectSortingStrategy}>
-        {/* <div className="grid grid-cols-4 gap-2"> */}
         {render(items)}
-        {/* {items.map((id) => (
-            <React.Fragment key={id}>
-              {children}
-              <SortableItem key={id} id={id} />
-            </React.Fragment>
-          ))} */}
-        {/* </div> */}
       </SortableContext>
     </DndContext>
   );
@@ -67,7 +66,9 @@ export default function SortImage({
         const oldIndex = items.indexOf(active.id as (typeof items)[0]);
         const newIndex = items.indexOf(over?.id as (typeof items)[0]);
 
-        return arrayMove(items, oldIndex, newIndex);
+        const newItems = arrayMove(items, oldIndex, newIndex);
+        onChange(newItems);
+        return newItems;
       });
     }
   }

@@ -11,25 +11,14 @@ import {
   AlertDialogTrigger,
 } from '@/components/ui/alert-dialog';
 import { Button } from '@/components/ui/button';
-import { deleteItem } from '@/features/tim/current/currentApi';
 import { Pencil, Trash } from '@phosphor-icons/react';
-import { toast } from 'react-hot-toast';
-import { useMutation, useQueryClient } from 'react-query';
 import { Item as ItemType } from '../_types/types';
 import FormSectionItem from './form-item';
 import useEditItem from '../_hooks/useEditItem';
+import useDeleteItem from '../_hooks/useDeleteItem';
 
 export default function Item({ item }: { item: ItemType }) {
-  const queryClient = useQueryClient();
-  const { mutate, isLoading } = useMutation(deleteItem, {
-    onSuccess: () => {
-      toast.success('Item deleted successfully');
-      queryClient.invalidateQueries(['section']);
-    },
-    onError: () => {
-      toast.error('Something gone wrong');
-    },
-  });
+  const { removeItem, isDeleting } = useDeleteItem(item.section_id!);
   const { updateItem } = useEditItem(item);
 
   return (
@@ -89,7 +78,7 @@ export default function Item({ item }: { item: ItemType }) {
               variant={'ghost'}
               className="text-white text-base bg-red-500 transition-all hover:bg-red-400 h-6 w-6 hover:text-red-50"
             >
-              {isLoading ? (
+              {isDeleting ? (
                 <Loading type="self" size="small" />
               ) : (
                 <Trash weight="bold" />
@@ -106,7 +95,7 @@ export default function Item({ item }: { item: ItemType }) {
             </AlertDialogHeader>
             <AlertDialogFooter>
               <AlertDialogCancel>Cancel</AlertDialogCancel>
-              <AlertDialogAction onClick={() => mutate(item.id)}>
+              <AlertDialogAction onClick={() => removeItem(item.id)}>
                 Continue
               </AlertDialogAction>
             </AlertDialogFooter>

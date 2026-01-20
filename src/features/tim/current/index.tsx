@@ -11,13 +11,15 @@ export default function Current() {
   const { data, isLoading: sectionsLoading } = useQuery(['sections'], {
     queryFn: getSections,
   });
-  const { createSection } = useAddSection();
+  const { createSection, isAdding } = useAddSection();
 
   return (
     <div>
       <Header title="Current">
         <FormSection onSubmit={(values) => createSection(values.title)}>
-          <Button className="max-md:h-8 max-md:text-xs">Add section</Button>
+          <Button className="max-md:h-8 max-md:text-xs" disabled={isAdding}>
+            {isAdding ? 'Adding...' : 'Add section'}
+          </Button>
         </FormSection>
       </Header>
 

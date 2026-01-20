@@ -1,40 +1,33 @@
+import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
+import { orderBy } from 'firebase/firestore';
+import { storage } from './firebase';
 import {
-  ref,
-  uploadBytes,
-  getDownloadURL,
-} from 'firebase/storage';
-import {
-  collection,
-  addDoc,
-  getDocs,
-  deleteDoc,
-  doc,
-  query,
-  where,
-  orderBy,
-  updateDoc,
-  getDoc,
-} from 'firebase/firestore';
-import { db, storage } from './firebase';
+  getCollection,
+  getDocument,
+  createDocument,
+  removeDocument,
+  patchDocument,
+} from '@/services/firestoreService';
+
+const BLOG_COLLECTION = 'blog';
 
 export async function uploadAlbums(albums: FileList[]) {
   const albumsPath: string[][] = [];
-
   for (let i = 0; i < albums.length; i++) {
     albumsPath[i] = [];
     for (let j = 0; j < albums[i].length; j++) {
-      const imageName = `${Math.random()}-${albums[i].item(j)?.name}`
+      const file = albums[i].item(j);
+      if (!file) continue;
+      const imageName = `${Math.random()}-${file.name}`
         .replace(' ', '-')
         .replace('/', '');
 
       const storageRef = ref(storage, `images/${imageName}`);
-      await uploadBytes(storageRef, albums[i].item(j) as File);
+      await uploadBytes(storageRef, file);
       const url = await getDownloadURL(storageRef);
-
       albumsPath[i].push(url);
     }
   }
-
   return albumsPath;
 }
 
@@ -57,16 +50,12 @@ export async function AddPost({
   createdAt: string;
   uploadedAlbums?: string[][];
 }) {
-  const imageName = thumbnail
-    ? `${Math.random()}-${thumbnail?.[0].name}`
-      .replace(' ', '-')
-      .replace('/', '')
-    : '';
-
-  const albumsPath: string[][] = await uploadAlbums(albums);
-
+  const albumsPath = await uploadAlbums(albums);
   let thumbnailUrl = '';
-  if (thumbnail) {
+  if (thumbnail && thumbnail[0]) {
+    const imageName = `${Math.random()}-${thumbnail[0].name}`
+      .replace(' ', '-')
+      .replace('/', '');
     const storageRef = ref(storage, `images/${imageName}`);
     await uploadBytes(storageRef, thumbnail[0]);
     thumbnailUrl = await getDownloadURL(storageRef);
@@ -78,50 +67,36 @@ export async function AddPost({
     category,
     draft,
     thumbnail: thumbnailUrl,
-    albums: [...(uploadedAlbums || []), ...albumsPath].map(album => ({ photos: album })),
+    albums: [...(uploadedAlbums || []), ...albumsPath].map((album) => ({
+      photos: album,
+    })),
     created_at: createdAt,
   };
 
-  const docRef = await addDoc(collection(db, 'blog'), newPost);
-  return [{ id: docRef.id, ...newPost }];
+  const created = await createDocument(BLOG_COLLECTION, newPost);
+  return [created];
 }
 
 export async function getPostByTitle(title: string) {
-  try {
-    console.log(`Fetching post by title: ${title}`);
-    const q = query(collection(db, 'blog'), where('title', '==', title));
-    const querySnapshot = await getDocs(q);
-
-    const posts = querySnapshot.docs.map(doc => {
-      const data = doc.data() as any;
-      return {
-        ...data,
-        id: doc.id,
-        albums: data.albums?.map((a: any) => a.photos) || []
-      };
-    });
-    console.log(`Posts found for title ${title}:`, posts);
-    return posts;
-  } catch (error) {
-    console.error(`Error in getPostByTitle(${title}):`, error);
-    throw error;
-  }
+  const posts = await getCollection<any>(BLOG_COLLECTION);
+  const filtered = posts
+    .filter((post) => post.title === title)
+    .map((post) => ({
+      ...post,
+      albums: post.albums?.map((a: any) => a.photos) || [],
+    }));
+  return filtered;
 }
 
 export async function getPostById(id: string) {
-  const docRef = doc(db, 'blog', id);
-  const docSnap = await getDoc(docRef);
-
-  if (docSnap.exists()) {
-    const data = docSnap.data() as any;
-    return [{
-      ...data,
-      id: docSnap.id,
-      albums: data.albums?.map((a: any) => a.photos) || []
-    }];
-  } else {
-    return [];
-  }
+  const post = await getDocument<any>(BLOG_COLLECTION, id);
+  if (!post) return [];
+  return [
+    {
+      ...post,
+      albums: post.albums?.map((a: any) => a.photos) || [],
+    },
+  ];
 }
 
 export async function getAllPosts({
@@ -131,99 +106,79 @@ export async function getAllPosts({
   title: string;
   category: string;
 }) {
-  try {
-    console.log('Fetching all posts...');
-    const q = query(collection(db, 'blog'), orderBy('created_at', 'desc'));
-    const querySnapshot = await getDocs(q);
-
-    const posts = querySnapshot.docs.map(doc => {
-      const data = doc.data() as any;
-      return {
-        ...data,
-        id: doc.id,
-        albums: data.albums?.map((a: any) => a.photos) || []
-      };
-    });
-
-    const filtered = posts.filter(post => {
+  const posts = await getCollection<any>(BLOG_COLLECTION, [
+    orderBy('created_at', 'desc'),
+  ]);
+  const filtered = posts
+    .map((post) => ({
+      ...post,
+      albums: post.albums?.map((a: any) => a.photos) || [],
+    }))
+    .filter((post) => {
       const titleMatch = post.title.toLowerCase().includes(title.toLowerCase());
-      const categoryMatch = post.category.toLowerCase().includes(category.toLowerCase());
+      const categoryMatch = post.category
+        .toLowerCase()
+        .includes(category.toLowerCase());
       return titleMatch && categoryMatch;
     });
-    console.log(`All posts fetched (${posts.length}), filtered down to (${filtered.length})`);
-    return filtered;
-  } catch (error) {
-    console.error('Error in getAllPosts:', error);
-    throw error;
-  }
+  return filtered;
 }
 
 export async function deletePost(id: string) {
-  const docRef = doc(db, 'blog', id);
-  // Just delete the doc to keep it simple and match original logic
-  await deleteDoc(docRef);
+  await removeDocument(BLOG_COLLECTION, id);
   return [{ id }];
 }
 
 export async function updatePost({
   id,
-  draft,
-  title,
-  content,
-  category,
   thumbnail,
+  newAlbums,
   oldAlbumsOrder,
   uploadedAlbums,
-  newAlbums,
   createdAt,
-}: {
-  id: string;
-  draft: boolean;
-  title: string;
-  content: string;
-  category: string;
-  thumbnail: FileList | string;
-  oldAlbumsOrder: string[][];
-  newAlbums: FileList[];
-  uploadedAlbums: string[][];
-  createdAt: string;
-}) {
-  let thumbnailPath = thumbnail as string;
+  ...fields
+}: any) {
+  let thumbnailUrl = typeof thumbnail === 'string' ? thumbnail : '';
 
-  if (typeof thumbnail === 'object') {
+  if (thumbnail && typeof thumbnail !== 'string' && thumbnail[0]) {
     const imageName = `${Math.random()}-${thumbnail[0].name}`
       .replace(' ', '_')
       .replace('/', '');
-
     const storageRef = ref(storage, `images/${imageName}`);
     await uploadBytes(storageRef, thumbnail[0]);
-    thumbnailPath = await getDownloadURL(storageRef);
+    thumbnailUrl = await getDownloadURL(storageRef);
   }
 
-  const albumsPath = await uploadAlbums(newAlbums);
-  const albums = [...oldAlbumsOrder, ...uploadedAlbums, ...albumsPath].map(album => ({ photos: album }));
+  const albumsPath = await uploadAlbums(newAlbums || []);
+  const albums = [
+    ...(oldAlbumsOrder || []),
+    ...(uploadedAlbums || []),
+    ...albumsPath,
+  ].map((album) => ({ photos: album }));
 
-  const docRef = doc(db, 'blog', id);
-  await updateDoc(docRef, {
-    title,
-    content,
-    thumbnail: thumbnailPath,
-    draft,
-    category,
+  const updateData = {
+    ...fields,
+    thumbnail: thumbnailUrl,
     albums,
     created_at: createdAt,
-  });
+  };
 
-  return [{ ...docRef, id, title, content, thumbnail: thumbnailPath, draft, category, albums: albums.map(a => a.photos), created_at: createdAt }];
+  await patchDocument(BLOG_COLLECTION, id, updateData);
+
+  return [
+    {
+      ...updateData,
+      id,
+      albums: albums.map((a) => a.photos),
+    },
+  ];
 }
 
 export async function draftPost({ id, draft }: { id: string; draft: boolean }) {
-  const docRef = doc(db, 'blog', id);
-  await updateDoc(docRef, { draft });
+  await patchDocument(BLOG_COLLECTION, id, { draft });
   return [{ id, draft }];
 }
 
 export async function deleteThumbnail(id: string) {
-  const docRef = doc(db, 'blog', id);
-  await updateDoc(docRef, { thumbnail: '' });
+  await patchDocument(BLOG_COLLECTION, id, { thumbnail: '' });
 }

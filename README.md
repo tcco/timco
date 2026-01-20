@@ -1,27 +1,64 @@
-# React + TypeScript + Vite
+# Timothy Co's Personal Website Refactor
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+This project is a personal website featuring "Current" status, a "Blog", and a "Gallery", built with modern web technologies and a focus on maintainability and performance.
 
-Currently, two official plugins are available:
+## Features
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react/README.md) uses [Babel](https://babeljs.io/) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+- **Current**: A dynamic section to show what Timothy is currently working on, learning, or interested in. Includes CRUD operations and drag-and-drop reordering.
+- **Blog**: A comprehensive blogging platform with support for images, albums, and categorization. Features a robust post editor and draft management.
+- **Gallery**: A media storage and display feature for photos and memories. Supports bulk uploads, image previews, and downloads.
 
-## Expanding the ESLint configuration
+## Tech Stack
 
-If you are developing a production application, we recommend updating the configuration to enable type aware lint rules:
+- **Frontend**: React, TypeScript, Vite
+- **State Management & Data Fetching**: React Query (TanStack Query)
+- **Database & Auth**: Firebase Firestore and Firebase Authentication
+- **Storage**: Firebase Storage
+- **Styling**: Tailwind CSS
+- **Testing**: Vitest, React Testing Library
+- **UI Components**: Radix UI, Shadcn UI, Phosphor Icons
 
-- Configure the top-level `parserOptions` property like this:
+## Refactoring Overview
 
-```js
-   parserOptions: {
-    ecmaVersion: 'latest',
-    sourceType: 'module',
-    project: ['./tsconfig.json', './tsconfig.node.json'],
-    tsconfigRootDir: __dirname,
-   },
+The codebase has undergone a significant refactor to improve quality and developer experience:
+
+1.  **Generic API Layer**: Centralized Firestore operations into a generic `firestoreService.ts` for consistent CRUD logic and automatic data sanitization.
+2.  **Hook Standardization**: All feature-specific hooks now consistently use `useMutation` and `useQuery` from React Query for robust state management.
+3.  **Type Safety**: Introduced comprehensive TypeScript interfaces and removed most `as any` assertions across the codebase.
+4.  **Component Decomposition**: Large components (like `PostForm`) have been broken down into smaller, focused sub-components.
+5.  **Automated Testing**: Integrated Vitest and wrote initial unit tests for the API layer to ensure stability.
+
+## Getting Started
+
+### Prerequisites
+
+- Node.js (v18+)
+- npm
+
+### Installation
+
+1.  Clone the repository:
+    ```bash
+    git clone [repository-url]
+    ```
+2.  Install dependencies:
+    ```bash
+    npm install
+    ```
+3.  Set up Firebase:
+    - Create a `.env` file and add your Firebase configuration.
+4.  Run the development server:
+    ```bash
+    npm run dev
+    ```
+
+### Running Tests
+
+```bash
+npm run test
 ```
 
-- Replace `plugin:@typescript-eslint/recommended` to `plugin:@typescript-eslint/recommended-type-checked` or `plugin:@typescript-eslint/strict-type-checked`
-- Optionally add `plugin:@typescript-eslint/stylistic-type-checked`
-- Install [eslint-plugin-react](https://github.com/jsx-eslint/eslint-plugin-react) and add `plugin:react/recommended` & `plugin:react/jsx-runtime` to the `extends` list
+## Maintenance
+
+- **Adding new features**: Follow the pattern of creating an API service, custom hooks using `useMutation`/`useQuery`, and modularized components.
+- **Styling**: Use Tailwind CSS for all new styling to maintain consistency.

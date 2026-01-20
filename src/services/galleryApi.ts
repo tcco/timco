@@ -6,15 +6,20 @@ import {
 } from 'firebase/storage';
 import {
   collection,
-  addDoc,
-  getDocs,
-  deleteDoc,
-  doc,
   query,
   orderBy,
+  getDocs,
   writeBatch,
+  doc,
 } from 'firebase/firestore';
 import { db, storage } from './firebase';
+import {
+  getCollection,
+  createDocument,
+  removeDocument,
+} from '@/services/firestoreService';
+
+const GALLERY_COLLECTION = 'gallery';
 
 export async function uploadImage(file: File) {
   const imageName = `${Math.random()}-${file.name}`
@@ -25,35 +30,23 @@ export async function uploadImage(file: File) {
   await uploadBytes(storageRef, file);
   const url = await getDownloadURL(storageRef);
 
-  const snapshot = await getDocs(query(collection(db, 'gallery'), orderBy('order', 'desc')));
+  const snapshot = await getDocs(
+    query(collection(db, GALLERY_COLLECTION), orderBy('order', 'desc'))
+  );
   const lastOrder = snapshot.docs[0]?.data()?.order || 0;
 
-  const docRef = await addDoc(collection(db, 'gallery'), {
+  const newDoc = await createDocument(GALLERY_COLLECTION, {
     img: url,
     name: file.name,
     storageName: imageName,
     order: lastOrder + 1,
   });
 
-  return [{ id: docRef.id, img: url, name: file.name, order: lastOrder + 1 }];
+  return [newDoc];
 }
 
 export async function getImages() {
-  try {
-    console.log('Fetching gallery images...');
-    const q = query(collection(db, 'gallery'), orderBy('order', 'asc'));
-    const querySnapshot = await getDocs(q);
-
-    const images = querySnapshot.docs.map((doc) => ({
-      ...doc.data(),
-      id: doc.id,
-    }));
-    console.log('Gallery images fetched:', images);
-    return images;
-  } catch (error) {
-    console.error('Error in getImages:', error);
-    throw error;
-  }
+  return getCollection(GALLERY_COLLECTION, [orderBy('order', 'asc')]);
 }
 
 export async function deleteImage({
@@ -65,14 +58,13 @@ export async function deleteImage({
   imageName?: string;
   imageUrl?: string;
 }) {
-  await deleteDoc(doc(db, 'gallery', id));
+  // Always remove the Firestore document first
+  await removeDocument(GALLERY_COLLECTION, id);
 
   let finalPath = '';
   if (imageName) {
-    finalPath = `images/${imageName}`;
+    finalPath = imageName.startsWith('images/') ? imageName : `images/${imageName}`;
   } else if (imageUrl) {
-    // Extract path from Firebase Storage URL
-    // https://firebasestorage.googleapis.com/v0/b/[BUCKET]/o/[PATH]?alt=media
     const match = imageUrl.match(/\/o\/([^?]+)/);
     if (match) {
       finalPath = decodeURIComponent(match[1]);
@@ -80,28 +72,38 @@ export async function deleteImage({
   }
 
   if (finalPath) {
-    const fileRef = ref(storage, finalPath);
-    await deleteObject(fileRef);
+    try {
+      const fileRef = ref(storage, finalPath);
+      await deleteObject(fileRef);
+    } catch (err) {
+      console.warn('Storage object deletion failed or already deleted:', err);
+    }
   }
 }
 
-export async function downloadImage(imageName: string) {
-  const starsRef = ref(storage, `images/${imageName}`);
-  // Get the download URL
-  return await getDownloadURL(starsRef)
+export async function downloadImage(url: string) {
+  try {
+    const response = await fetch(url, {
+      method: 'GET',
+      mode: 'cors', // Ensure CORS is respected
+      cache: 'no-cache',
+    });
+    if (!response.ok) throw new Error('Network response was not ok');
+    return await response.blob();
+  } catch (error) {
+    console.error('Error downloading image:', error);
+    throw error;
+  }
 }
 
 export async function reorderGallery(
   newOrder: { id: string; order: number }[]
 ) {
   const batch = writeBatch(db);
-
   newOrder.forEach((item) => {
-    const docRef = doc(db, 'gallery', item.id);
+    const docRef = doc(db, GALLERY_COLLECTION, item.id);
     batch.update(docRef, { order: item.order });
   });
-
   await batch.commit();
-
   return newOrder;
 }

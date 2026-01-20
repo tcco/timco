@@ -1,29 +1,26 @@
 import { deleteThumbnail } from '@/services/blogApi';
-import { useState } from 'react';
 import toast from 'react-hot-toast';
-import { useQueryClient } from 'react-query';
+import { useQueryClient, useMutation } from 'react-query';
 
 export default function useDeleteThumbnail() {
-  const [loading, setLoading] = useState(false);
   const queryClient = useQueryClient();
 
-  function removeThumbnail(id: string, onSuccess: () => void) {
-    setLoading(true);
-
-    toast.promise(deleteThumbnail(id), {
-      loading: 'Deleting thumbnail...',
-      success() {
-        onSuccess();
-        setLoading(false);
+  const { mutate: removeThumbnail, isLoading: deletingThumbnail } = useMutation(
+    ({ id, onSuccess }: { id: string; onSuccess: () => void }) =>
+      deleteThumbnail(id).then(onSuccess),
+    {
+      onMutate: () => {
+        return toast.loading('Deleting thumbnail...');
+      },
+      onSuccess: (_, __, toastId) => {
         queryClient.invalidateQueries(['blog']);
-        return 'Thumbnail deleted successfully';
+        toast.success('Thumbnail deleted successfully', { id: toastId as string });
       },
-      error() {
-        setLoading(false);
-        return 'Failed to delete thumbnail';
+      onError: (err: any, _, toastId) => {
+        toast.error(`Failed to delete thumbnail: ${err.message || err}`, { id: toastId as string });
       },
-    });
-  }
+    }
+  );
 
-  return { deleteThumbnail: removeThumbnail, deletingThumbnail: loading };
+  return { deleteThumbnail: removeThumbnail, deletingThumbnail };
 }
