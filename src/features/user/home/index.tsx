@@ -1,12 +1,6 @@
-import { useEffect, useState } from 'react';
+  import { useEffect, useState } from 'react';
 import { motion, useTransform, useScroll } from 'framer-motion';
-
-interface ModelProps {
-  imageDetails: {
-    width: number;
-    height: number;
-  };
-}
+import HomePreviews from './HomePreviews';
 
 //Ease
 const transition = { duration: 1.4, ease: [0.6, 0.01, -0.05, 0.9] };
@@ -49,11 +43,11 @@ const letter = {
   },
 };
 
-const Model = ({ imageDetails }: ModelProps) => {
+const Model = () => {
   const { scrollYProgress } = useScroll();
   const scale = useTransform(scrollYProgress, [0, 8], [1, 1.3]);
-  const y = useTransform(scrollYProgress, [0, 1], [0, -100]);
-  const yText = useTransform(scrollYProgress, [0, 1], [0, 200]);   // Moves down as you scroll
+  const y = useTransform(scrollYProgress, [0, 1], [0, -200]);  // Image moves up more
+  const yText = useTransform(scrollYProgress, [0, 1], [0, 300]);  // Text moves down more
 
   const [canScroll, setCanScroll] = useState(false);
 
@@ -67,7 +61,6 @@ const Model = ({ imageDetails }: ModelProps) => {
 
   return (
     <>
-      {/* <Header /> */}
       <motion.div
         onAnimationComplete={() => setCanScroll(true)}
         className="single"
@@ -114,7 +107,7 @@ const Model = ({ imageDetails }: ModelProps) => {
                     transition={transition}
                   >
                     <motion.img
-                      src={'/tim.png'}
+                      src="/tim.png"
                       alt="an image"
                       style={{ scale: scale }}
                       initial={{
@@ -133,6 +126,8 @@ const Model = ({ imageDetails }: ModelProps) => {
           </div>
         </div>
       </motion.div>
+
+      <HomePreviews />
     </>
   );
 };
