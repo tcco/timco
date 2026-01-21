@@ -4,10 +4,12 @@ import { Database } from '@/types/schema';
 import Item from './item';
 
 type Section = Database['public']['Tables']['current_sections']['Row'];
-function Section({ section }: { section: Section }) {
+function Section({ section, limit }: { section: Section; limit?: number }) {
   const { data, isLoading } = useQuery(['section', section.id], {
     queryFn: () => getItems(section.id),
   });
+
+  const displayData = limit ? data?.slice(0, limit) : data;
 
   return (
     <div>
@@ -19,7 +21,7 @@ function Section({ section }: { section: Section }) {
       {isLoading && 'Loading...'}
       <div className=" space-y-2">
         <ul className="grid grid-cols-1 gap-2 items-start">
-          {data?.map((item: any) => (
+          {displayData?.map((item: any) => (
             <Item key={item.id} item={item} />
           ))}
         </ul>
