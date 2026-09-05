@@ -8,11 +8,14 @@ const serviceAccount = JSON.parse(
     readFileSync('./firebase-service-account.json', 'utf8')
 );
 
-admin.initializeApp({
+import { getFirestore } from 'firebase-admin/firestore';
+
+const app = admin.initializeApp({
     credential: admin.credential.cert(serviceAccount),
 });
 
-const db = admin.firestore();
+const db = getFirestore(app, 'main');
+
 
 async function verifyData() {
     console.log('--- Verifying Firestore Data ---');
