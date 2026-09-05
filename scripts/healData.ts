@@ -10,13 +10,19 @@ const serviceAccount = JSON.parse(
 
 const FIREBASE_BUCKET = process.env.VITE_FIREBASE_STORAGE_BUCKET!;
 
-admin.initializeApp({
-    credential: admin.credential.cert(serviceAccount),
+import { initializeApp, cert } from 'firebase-admin/app';
+import { getFirestore } from 'firebase-admin/firestore';
+import { getStorage } from 'firebase-admin/storage';
+
+const app = initializeApp({
+    credential: cert(serviceAccount),
     storageBucket: FIREBASE_BUCKET
 });
 
-const db = admin.firestore();
-const bucket = admin.storage().bucket();
+const db = getFirestore(app, 'main');
+const bucket = getStorage(app).bucket();
+
+
 
 function getBaseName(fileName: string): string {
     // If it's a full URL, get the path part

@@ -23,12 +23,17 @@ const serviceAccount = JSON.parse(
     fs.readFileSync(path.join(process.cwd(), 'firebase-service-account.json'), 'utf8')
 );
 
-admin.initializeApp({
-    credential: admin.credential.cert(serviceAccount),
+import { initializeApp, cert } from 'firebase-admin/app';
+import { getFirestore } from 'firebase-admin/firestore';
+
+const app = initializeApp({
+    credential: cert(serviceAccount),
     storageBucket: FIREBASE_BUCKET,
 });
 
-const db = admin.firestore();
+const db = getFirestore(app, 'main');
+
+
 
 // Helper to convert Supabase URL to Firebase Storage URL
 // Note: This assumes the user uploaded files to an 'images' folder in Firebase Storage

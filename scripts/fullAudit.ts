@@ -8,11 +8,15 @@ const serviceAccount = JSON.parse(
     readFileSync('./firebase-service-account.json', 'utf8')
 );
 
-admin.initializeApp({
-    credential: admin.credential.cert(serviceAccount),
+import { initializeApp, cert } from 'firebase-admin/app';
+import { getFirestore } from 'firebase-admin/firestore';
+
+const app = initializeApp({
+    credential: cert(serviceAccount),
 });
 
-const db = admin.firestore();
+const db = getFirestore(app, 'main');
+
 
 async function fullAudit() {
     console.log('--- Full Current Audit ---');
