@@ -16,7 +16,9 @@ if (!admin.apps.length) {
   });
 }
 
-const db = getFirestore(admin.app(), process.env.VITE_FIREBASE_DATABASE_ID || 'main');
+const db = process.env.VITE_FIREBASE_DATABASE_ID
+  ? getFirestore(admin.app(), process.env.VITE_FIREBASE_DATABASE_ID)
+  : admin.firestore();
 
 async function migrateBlogSlugs() {
   console.log('--- Starting Blog Slug & ID Migration ---');
