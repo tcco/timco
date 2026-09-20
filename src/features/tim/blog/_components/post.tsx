@@ -8,7 +8,7 @@ interface Props {
   post: PostType;
 }
 export default function Post({ post }: Props) {
-  const titleLink = post.title.replaceAll(' ', '_');
+  const postLink = `/blog/${post.slug || post.id}`;
   return (
     <div className="border rounded-sm p-2 flex gap-4">
       {post.thumbnail && (
@@ -40,7 +40,7 @@ export default function Post({ post }: Props) {
             </span>
           )}
 
-          <Link to={titleLink}>
+          <Link to={postLink} target="_blank" rel="noopener noreferrer">
             <ArrowLineUpRight className="text-xl" />
           </Link>
         </div>

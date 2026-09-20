@@ -36,6 +36,7 @@ export interface Database {
           created_at: string
           draft: boolean
           id: string
+          slug?: string
           thumbnail: string | null
           title: string
         }
@@ -47,6 +48,7 @@ export interface Database {
           created_at?: string
           draft?: boolean
           id?: string
+          slug?: string
           thumbnail?: string | null
           title?: string
         }
@@ -58,6 +60,7 @@ export interface Database {
           created_at?: string
           draft?: boolean
           id?: string
+          slug?: string
           thumbnail?: string | null
           title?: string
         }

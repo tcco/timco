@@ -7,6 +7,7 @@ import {
     doc,
     query,
     getDoc,
+    setDoc,
     QueryConstraint,
     DocumentData,
     WithFieldValue,
@@ -57,9 +58,15 @@ export async function getDocument<T = DocumentData>(
  */
 export async function createDocument<T extends WithFieldValue<DocumentData>>(
     collectionName: string,
-    data: T
+    data: T,
+    id?: string
 ): Promise<{ id: string } & T> {
     const sanitized = sanitizeData(data as any) as T;
+    if (id) {
+        const docRef = doc(db, collectionName, id);
+        await setDoc(docRef, sanitized);
+        return { id, ...sanitized };
+    }
     const docRef = await addDoc(collection(db, collectionName), sanitized);
     return { id: docRef.id, ...sanitized };
 }

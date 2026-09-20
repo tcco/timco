@@ -66,9 +66,9 @@ export default function HomePreviews() {
 
         <div className="flex overflow-x-auto gap-6 pb-6 -mx-6 px-6 scrollbar-hide snap-x">
           {recentPosts.map((post: any) => {
-             const titleLink = `/blog/${post.title.replaceAll(' ', '_')}`;
+             const postLink = `/blog/${post.slug || post.id}`;
              return (
-              <Link to={titleLink} key={post.id} className="group min-w-[300px] w-[300px] snap-start space-y-3">
+              <Link to={postLink} key={post.id} className="group min-w-[300px] w-[300px] snap-start space-y-3">
                 <div className="aspect-[3/2] bg-gray-100 overflow-hidden rounded-md">
                   {post.thumbnail ? (
                     <img src={post.thumbnail} alt={post.title} className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105" />

@@ -1,5 +1,5 @@
 import { Markdown } from '@/components/markdown';
-import { getPostByTitle } from '@/services/blogApi';
+import { getPostByIdOrSlug } from '@/services/blogApi';
 import { useQuery } from 'react-query';
 import { useParams } from 'react-router-dom';
 import remarkGfm from 'remark-gfm';
@@ -9,8 +9,7 @@ function BlogPost() {
   const { blogId } = useParams();
 
   const { data, isLoading } = useQuery(['post', blogId], {
-    queryFn: () => getPostByTitle(blogId?.replaceAll('_', ' ') as string),
-    onSuccess: (data) => console.log(data),
+    queryFn: () => getPostByIdOrSlug(blogId as string),
     staleTime: Infinity,
   });
 
@@ -18,11 +17,14 @@ function BlogPost() {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const albums: any = post?.albums;
 
-  console.log(post);
-
   return (
     <div>
-      {isLoading && 'Loading...'}
+      {isLoading && (
+        <div className="text-center py-20 text-gray-400">Loading post...</div>
+      )}
+      {!isLoading && !post && (
+        <div className="text-center py-20 text-gray-500">Post not found.</div>
+      )}
       {post && (
         <div className="max-w-4xl mx-auto py-8 flex flex-col items-center font-inter ">
           <h1 className="scroll-m-20 text-4xl font-extrabold tracking-tight lg:text-5xl mb-4 font-inter text-[#212529] text-center">

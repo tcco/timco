@@ -19,18 +19,18 @@ const Thumbnail = styled.div<{ $src: string }>`
 `;
 
 export default function BlogItem({ post }: BlogItemProps) {
-  const titleLink = post.title.replaceAll(' ', '_');
+  const postLink = `/blog/${post.slug || post.id}`;
 
   return (
     <div className="grid grid-cols-[auto,1fr] gap-4 relative max-md:grid-cols-1 max-md:grid-rows-2">
       {/* {loading && (
         <div className="absolute inset-0 w-full h-full bg-gray-200/50 z-10 animate-pulse"></div>
       )} */}
-      <Link to={`${titleLink}`}>
+      <Link to={postLink}>
         {post.thumbnail && <Thumbnail $src={post.thumbnail} />}
       </Link>
       <div className="flex flex-col">
-        <Link to={`${titleLink}`}>
+        <Link to={postLink}>
           <div>
             <div className="flex gap-2">
               <p className="text-sm text-gray-500 mb-2">

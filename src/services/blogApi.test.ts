@@ -1,11 +1,72 @@
 import '@/test/firebaseMock';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { getAllPosts, getPostById, deletePost, draftPost } from './blogApi';
+import { getAllPosts, getPostById, getPostByIdOrSlug, deletePost, draftPost } from './blogApi';
 import { getDocs, getDoc, deleteDoc, updateDoc } from 'firebase/firestore';
 
 describe('blogApi', () => {
     beforeEach(() => {
         vi.clearAllMocks();
+    });
+
+    describe('getPostByIdOrSlug', () => {
+        it('should resolve directly by document ID', async () => {
+            vi.mocked(getDoc).mockResolvedValueOnce({
+                exists: () => true,
+                id: '88',
+                data: () => ({ title: 'Stripe Sessions', slug: 'stripe-sessions-2024' }),
+            } as any);
+
+            const post = await getPostByIdOrSlug('88');
+            expect(post).toHaveLength(1);
+            expect(post[0].id).toBe('88');
+            expect(post[0].title).toBe('Stripe Sessions');
+        });
+
+        it('should resolve by slug field when doc lookup misses', async () => {
+            vi.mocked(getDoc).mockResolvedValueOnce({
+                exists: () => false,
+            } as any);
+
+            const mockDocs = [
+                { id: '93', data: () => ({ id: 93, title: 'FYNN (Finance You Need Now) AI Edition', slug: 'fynn-ai-edition' }) },
+            ];
+            vi.mocked(getDocs).mockResolvedValueOnce({
+                docs: mockDocs,
+            } as any);
+
+            const post = await getPostByIdOrSlug('fynn-ai-edition');
+            expect(post).toHaveLength(1);
+            expect(post[0].slug).toBe('fynn-ai-edition');
+        });
+
+        it('should resolve legacy title with underscores for backward compatibility', async () => {
+            vi.mocked(getDoc).mockResolvedValueOnce({
+                exists: () => false,
+            } as any);
+
+            const mockDocs = [
+                { id: '22', data: () => ({ id: 22, title: 'Life Developments', slug: 'life-developments' }) },
+            ];
+            vi.mocked(getDocs).mockResolvedValueOnce({
+                docs: mockDocs,
+            } as any);
+
+            const post = await getPostByIdOrSlug('Life_Developments');
+            expect(post).toHaveLength(1);
+            expect(post[0].title).toBe('Life Developments');
+        });
+
+        it('should return empty array when post does not exist', async () => {
+            vi.mocked(getDoc).mockResolvedValueOnce({
+                exists: () => false,
+            } as any);
+            vi.mocked(getDocs).mockResolvedValueOnce({
+                docs: [],
+            } as any);
+
+            const post = await getPostByIdOrSlug('non-existent');
+            expect(post).toHaveLength(0);
+        });
     });
 
     describe('getAllPosts', () => {

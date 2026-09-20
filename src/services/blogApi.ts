@@ -8,6 +8,7 @@ import {
   removeDocument,
   patchDocument,
 } from '@/services/firestoreService';
+import { generateSlug } from '@/utils/slug';
 
 const BLOG_COLLECTION = 'blog';
 
@@ -61,7 +62,17 @@ export async function AddPost({
     thumbnailUrl = await getDownloadURL(storageRef);
   }
 
+  // Assign next sequential numeric ID and generate slug
+  const posts = await getCollection<any>(BLOG_COLLECTION);
+  const numericIds = posts
+    .map((p) => Number(p.id))
+    .filter((n) => !isNaN(n) && Number.isInteger(n));
+  const nextId = numericIds.length > 0 ? Math.max(...numericIds) + 1 : 1;
+  const slug = generateSlug(title);
+
   const newPost = {
+    id: nextId,
+    slug,
     title,
     content,
     category,
@@ -73,8 +84,60 @@ export async function AddPost({
     created_at: createdAt,
   };
 
-  const created = await createDocument(BLOG_COLLECTION, newPost);
+  const created = await createDocument(BLOG_COLLECTION, newPost, String(nextId));
   return [created];
+}
+
+export async function getPostByIdOrSlug(identifier: string) {
+  if (!identifier) return [];
+
+  // 1. Try direct Firestore document lookup by ID
+  try {
+    const post = await getDocument<any>(BLOG_COLLECTION, identifier);
+    if (post && post.title) {
+      return [
+        {
+          ...post,
+          albums: post.albums?.map((a: any) => a.photos) || [],
+        },
+      ];
+    }
+  } catch {
+    // Continue if direct doc ID lookup fails
+  }
+
+  // 2. Fetch all posts to resolve by slug, numeric ID, or legacy title
+  const posts = await getCollection<any>(BLOG_COLLECTION);
+  const normalizedId = decodeURIComponent(identifier).trim().toLowerCase();
+  const legacyTitleSearch = decodeURIComponent(identifier)
+    .replaceAll('_', ' ')
+    .trim()
+    .toLowerCase();
+
+  const found = posts.find((p) => {
+    // Match explicit slug
+    if (p.slug && String(p.slug).toLowerCase() === normalizedId) return true;
+
+    // Match numeric id or string doc id
+    if (p.id !== undefined && String(p.id).toLowerCase() === normalizedId) return true;
+
+    // Match dynamically generated slug from title
+    if (p.title && generateSlug(p.title) === normalizedId) return true;
+
+    // Match legacy title (underscores as spaces)
+    if (p.title && p.title.trim().toLowerCase() === legacyTitleSearch) return true;
+
+    return false;
+  });
+
+  if (!found) return [];
+
+  return [
+    {
+      ...found,
+      albums: found.albums?.map((a: any) => a.photos) || [],
+    },
+  ];
 }
 
 export async function getPostByTitle(title: string) {
@@ -156,8 +219,11 @@ export async function updatePost({
     ...albumsPath,
   ].map((album) => ({ photos: album }));
 
+  const slug = fields.slug || (fields.title ? generateSlug(fields.title) : undefined);
+
   const updateData = {
     ...fields,
+    ...(slug ? { slug } : {}),
     thumbnail: thumbnailUrl,
     albums,
     created_at: createdAt,

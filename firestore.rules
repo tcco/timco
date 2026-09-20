@@ -1,0 +1,16 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Allow anyone to READ public content
+    match /gallery/{doc} { allow read: if true; }
+    match /current_sections/{doc} { allow read: if true; }
+    match /current_items/{doc} { allow read: if true; }
+    match /blog/{doc} { allow read: if true; }
+
+    // ONLY allow authenticated users to WRITE
+    match /{document=**} {
+      allow read: if false;
+      allow write: if request.auth != null;
+    }
+  }
+}
