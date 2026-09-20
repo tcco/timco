@@ -7,6 +7,7 @@ import Section from '@/features/user/current/_components/section';
 // import Carousel from '@/components/Carousel';
 import { motion } from 'framer-motion';
 import { PenTool } from 'lucide-react';
+import { generateSlug } from '@/utils/slug';
 
 const fadeInUp = {
   initial: { opacity: 0, y: 20 },
@@ -66,7 +67,7 @@ export default function HomePreviews() {
 
         <div className="flex overflow-x-auto gap-6 pb-6 -mx-6 px-6 scrollbar-hide snap-x">
           {recentPosts.map((post: any) => {
-             const postLink = `/blog/${post.slug || post.id}`;
+             const postLink = `/blog/${post.slug || generateSlug(post.title) || post.id}`;
              return (
               <Link to={postLink} key={post.id} className="group min-w-[300px] w-[300px] snap-start space-y-3">
                 <div className="aspect-[3/2] bg-gray-100 overflow-hidden rounded-md">

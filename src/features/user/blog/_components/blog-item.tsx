@@ -1,6 +1,7 @@
 import { Link } from 'react-router-dom';
 import { styled } from 'styled-components';
 import { Database } from '@/types/schema';
+import { generateSlug } from '@/utils/slug';
 
 interface BlogItemProps {
   post: Database['public']['Tables']['blog']['Row'];
@@ -19,7 +20,7 @@ const Thumbnail = styled.div<{ $src: string }>`
 `;
 
 export default function BlogItem({ post }: BlogItemProps) {
-  const postLink = `/blog/${post.slug || post.id}`;
+  const postLink = `/blog/${post.slug || generateSlug(post.title) || post.id}`;
 
   return (
     <div className="grid grid-cols-[auto,1fr] gap-4 relative max-md:grid-cols-1 max-md:grid-rows-2">

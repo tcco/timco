@@ -1,6 +1,6 @@
 import admin from 'firebase-admin';
 import dotenv from 'dotenv';
-import { readFileSync } from 'fs';
+import { getFirestore } from 'firebase-admin/firestore';
 import { generateSlug } from '../src/utils/slug.js';
 
 dotenv.config();
@@ -16,7 +16,7 @@ if (!admin.apps.length) {
   });
 }
 
-const db = admin.firestore();
+const db = getFirestore(admin.app(), process.env.VITE_FIREBASE_DATABASE_ID || 'main');
 
 async function migrateBlogSlugs() {
   console.log('--- Starting Blog Slug & ID Migration ---');

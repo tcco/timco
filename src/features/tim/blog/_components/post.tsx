@@ -3,12 +3,13 @@ import { PostType } from '../_types/types';
 import { Link } from 'react-router-dom';
 import EditPost from './edit-post';
 import DeletePost from './delete-post';
+import { generateSlug } from '@/utils/slug';
 
 interface Props {
   post: PostType;
 }
 export default function Post({ post }: Props) {
-  const postLink = `/blog/${post.slug || post.id}`;
+  const postLink = `/blog/${post.slug || generateSlug(post.title) || post.id}`;
   return (
     <div className="border rounded-sm p-2 flex gap-4">
       {post.thumbnail && (
